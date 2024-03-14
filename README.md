@@ -49,7 +49,8 @@ Just do as follows.
 ## HTC changes
 
 - Change the old package fuzzywuzzy to thefuzz
-- Error calling actions/commands twice
+- Fix error: calling actions/commands twice 
+- Add doubleclick an item in chooser
 - Code cleanup with Ruff link, format
 - Added struct members
 - Added enums and enum members
