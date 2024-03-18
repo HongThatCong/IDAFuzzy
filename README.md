@@ -51,6 +51,6 @@ Just do as follows.
 - Change the old package fuzzywuzzy to thefuzz
 - Fix error: calling actions/commands twice 
 - Add doubleclick an item in chooser
-- Code cleanup with Ruff link, format
+- Code cleanup with Ruff + Pylint
 - Added struct members
 - Added enums and enum members
