@@ -87,21 +87,22 @@ class EmbeddedChooserClass(Choose):
     def __init__(self, form, title, flags=0):
         super().__init__(title, [["Action/Name", 30 | Choose.CHCOL_PLAIN]], embedded=True, height=20, flags=flags)
         self.form = form
-        self.n = 0
         self.items = []
         self.icon = 0
 
     def OnGetIcon(self, n):
-        return choices[self.items[n][0]].get_icon()
-
-    def OnSelectLine(self, n):
         if 0 <= n < len(self.items):
+            return choices[self.items[n][0]].get_icon()
+        return -1
+
+    def OnSelectLine(self, sel):
+        if 0 <= sel < len(self.items):
             self.form.Close(1)
 
     def OnGetLine(self, n):
         if 0 <= n < len(self.items):
             return self.items[n]
-        return None
+        return [""]
 
     def OnGetSize(self):
         return len(self.items)
@@ -156,6 +157,8 @@ class FuzzySearchForm(Form):
     def __init__(self):
         self.invert = False
         self.EChooser = EmbeddedChooserClass(self, "", flags=Choose.CH_MODAL)
+        self.ctrlChooser = None
+        self.iStr1 = None
         self.selected_id = 0
         self.s = ""
         self.fst = FuzzySearchThread()
@@ -169,11 +172,11 @@ IDA Fuzzy Search
 {FormChangeCb}
 <:{iStr1}>
 
-<Results:{cEChooser}>
+<Results:{ctrlChooser}>
 """,
             {
                 "iStr1": Form.StringInput(),
-                "cEChooser": Form.EmbeddedChooserControl(self.EChooser),
+                "ctrlChooser": Form.EmbeddedChooserControl(self.EChooser),
                 "FormChangeCb": Form.FormChangeCb(self.OnFormChange),
             },
         )
@@ -185,15 +188,15 @@ IDA Fuzzy Search
         elif fid == -2:
             # terminate
             pass
-        elif fid == self.cEChooser.id:
-            value = self.GetControlValue(self.cEChooser)
+        elif fid == self.ctrlChooser.id:
+            value = self.GetControlValue(self.ctrlChooser)
             if value:
                 self.selected_id = value[0]
         elif fid == self.iStr1.id:
             self.s = self.GetControlValue(self.iStr1)
             self.EChooser.items = []
             if self.s == "":
-                self.RefreshField(self.cEChooser)
+                self.RefreshField(self.ctrlChooser)
                 return 1
             self.fst.stop()
             self.fst.quit()  # if you type speedy, FuzzySearch which executed before is not finished here.
@@ -218,8 +221,8 @@ IDA Fuzzy Search
     def refresh_list(self, *extracts):
         for ex in extracts:
             self.EChooser.items.append([ex])
-        self.RefreshField(self.cEChooser)
-        self.SetControlValue(self.cEChooser, [0])  # set cursor top
+        self.RefreshField(self.ctrlChooser)
+        self.SetControlValue(self.ctrlChooser, [0])  # set cursor top
 
     def finished(self):
         pass
@@ -311,7 +314,7 @@ def fuzzy_search_main():
                 super().__init__()
                 self.enum_name = ename
 
-            def visit_enum_member(self, cid, value):
+            def visit_enum_member(self, cid, _value):
                 enum_member_name = idaapi.get_enum_member_name(cid)
                 enum_member_name = f"{self.enum_name}.{enum_member_name}"
                 choices[enum_member_name] = Commands(
@@ -348,9 +351,6 @@ def fuzzy_search_main():
 
 
 class fuzzy_search_handler(idaapi.action_handler_t):
-    def __init__(self):
-        super().__init__()
-
     def activate(self, ctx):
         fuzzy_search_main()
         return 1
